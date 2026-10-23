@@ -20,6 +20,10 @@ function submissionKey(values: string[]) {
 }
 
 export async function POST(request: Request) {
+  if (process.env.EARLY_ACCESS_ENABLED !== "true") {
+    return Response.json({ error: "Early access submissions are currently unavailable." }, { status: 503 });
+  }
+
   const forwardedFor = request.headers.get("x-forwarded-for");
   const clientKey = forwardedFor?.split(",")[0]?.trim() || "unknown";
 
