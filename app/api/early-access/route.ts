@@ -1,17 +1,22 @@
+import { createHash } from "node:crypto";
 import { Resend } from "resend";
 
-const recipient = "asrateqgadgets@yahoo.com";
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const audienceValues = new Set(["fleet", "individual"]);
 const submissions = new Map<string, number>();
 const windowMs = 60_000;
 
+// Best-effort only: serverless instances do not share this in-memory state.
 function limited(key: string) {
   const now = Date.now();
   const previous = submissions.get(key) ?? 0;
   if (now - previous < windowMs) return true;
   submissions.set(key, now);
   return false;
+}
+
+function submissionKey(values: string[]) {
+  return createHash("sha256").update(values.join("\u001f")).digest("hex");
 }
 
 export async function POST(request: Request) {
@@ -42,7 +47,8 @@ export async function POST(request: Request) {
   if (!audienceValues.has(audience) || message.length > 2_000) {
     return Response.json({ error: "Please provide valid form details." }, { status: 400 });
   }
-  if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
+  const recipient = process.env.QUOTE_RECIPIENT_EMAIL;
+  if (!recipient || !process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
     return Response.json({ error: "Email service is not configured." }, { status: 503 });
   }
 
@@ -60,12 +66,9 @@ export async function POST(request: Request) {
         `Message: ${message || "(none)"}`,
       ].join("\n"),
     },
-    { idempotencyKey: `early-access/${email}/${audience}` },
+    { idempotencyKey: `early-access/${submissionKey([firstName, email, audience, message])}` },
   );
 
-  if (error) {
-    return Response.json({ error: "Unable to submit right now." }, { status: 502 });
-  }
-
+  if (error) return Response.json({ error: "Unable to submit right now." }, { status: 502 });
   return Response.json({ ok: true, id: data?.id });
 }

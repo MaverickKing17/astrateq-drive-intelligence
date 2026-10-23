@@ -141,6 +141,8 @@ function VisionCard({
   );
 }
 
+const DEMO_ONLY = true;
+
 function InterestForm({
   audience,
   setAudience,
@@ -149,125 +151,65 @@ function InterestForm({
   setAudience: (value: string) => void;
 }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitted, setSubmitted] = useState(false);
-  function submit(event: React.FormEvent<HTMLFormElement>) {
+  const [status, setStatus] = useState<"idle" | "pending" | "success" | "error">("idle");
+  const [statusMessage, setStatusMessage] = useState("");
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
+    if (status === "pending") return;
+    const form = event.currentTarget;
+    const data = new FormData(form);
     const next: Record<string, string> = {};
-    if (!String(data.get("firstName") || "").trim())
-      next.firstName = "Please enter your first name.";
-    if (!/^\S+@\S+\.\S+$/.test(String(data.get("email") || "").trim()))
-      next.email = "Enter a valid email address.";
-    if (!data.get("consent"))
-      next.consent = "Please confirm your consent to continue.";
+    if (!String(data.get("firstName") || "").trim()) next.firstName = "Please enter your first name.";
+    if (!/^\S+@\S+\.\S+$/.test(String(data.get("email") || "").trim())) next.email = "Enter a valid email address.";
+    if (!data.get("consent")) next.consent = "Please confirm your consent to continue.";
     setErrors(next);
-    setSubmitted(Object.keys(next).length === 0);
+    if (Object.keys(next).length > 0) {
+      setStatus("error");
+      setStatusMessage("Please correct the highlighted fields.");
+      return;
+    }
+
+    if (DEMO_ONLY) {
+      setStatus("success");
+      setStatusMessage("Demo validation complete. Nothing was transmitted or stored.");
+      return;
+    }
+
+    setStatus("pending");
+    setStatusMessage("Submitting your interest…");
+    try {
+      const response = await fetch("/api/early-access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.fromEntries(data)),
+      });
+      const result = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(result.error || "Unable to submit right now.");
+      setStatus("success");
+      setStatusMessage("Thanks — your early-access interest was received.");
+      form.reset();
+    } catch (error) {
+      setStatus("error");
+      setStatusMessage(error instanceof Error ? error.message : "Unable to submit right now. Please try again.");
+    }
   }
+
   return (
     <div className="form-card">
       <form onSubmit={submit} noValidate aria-describedby="form-demo-note">
         <div className="form-grid">
-          <label htmlFor="firstName">
-            First name *
-            <input
-              id="firstName"
-              name="firstName"
-              required
-              aria-invalid={!!errors.firstName}
-              aria-describedby={
-                errors.firstName ? "firstName-error" : undefined
-              }
-              placeholder="Enter your first name"
-            />
-            {errors.firstName && (
-              <span id="firstName-error" className="error" role="alert">
-                {errors.firstName}
-              </span>
-            )}
-          </label>
-          <label htmlFor="email">
-            Email address *
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              aria-invalid={!!errors.email}
-              aria-describedby={errors.email ? "email-error" : undefined}
-              placeholder="you@example.com"
-            />
-            {errors.email && (
-              <span id="email-error" className="error" role="alert">
-                {errors.email}
-              </span>
-            )}
-          </label>
+          <label htmlFor="firstName">First name *<input id="firstName" name="firstName" required aria-invalid={!!errors.firstName} aria-describedby={errors.firstName ? "firstName-error" : undefined} placeholder="Enter your first name" />{errors.firstName && <span id="firstName-error" className="error" role="alert">{errors.firstName}</span>}</label>
+          <label htmlFor="email">Email address *<input id="email" name="email" type="email" required aria-invalid={!!errors.email} aria-describedby={errors.email ? "email-error" : undefined} placeholder="you@example.com" />{errors.email && <span id="email-error" className="error" role="alert">{errors.email}</span>}</label>
         </div>
-        <fieldset>
-          <legend>Audience type *</legend>
-          <div className="radio-row">
-            <label>
-              <input
-                type="radio"
-                name="audience"
-                value="fleet"
-                checked={audience === "fleet"}
-                onChange={(e) => setAudience(e.target.value)}
-              />{" "}
-              Fleet / Delivery Business
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="audience"
-                value="individual"
-                checked={audience === "individual"}
-                onChange={(e) => setAudience(e.target.value)}
-              />{" "}
-              Individual Driver
-            </label>
-          </div>
-        </fieldset>
-        <label htmlFor="message">
-          What would you most like from a driver-awareness product?
-          <textarea
-            id="message"
-            name="message"
-            placeholder="Share your thoughts (optional)"
-            rows={4}
-          />
-        </label>
-        <label className="consent" htmlFor="consent">
-          <input
-            id="consent"
-            name="consent"
-            type="checkbox"
-            required
-            aria-invalid={!!errors.consent}
-          />{" "}
-          <span>
-            I&apos;d like to receive Astrateq pre-launch updates and related
-            product research communications. I understand this is a pre-launch
-            product and I can withdraw my consent at any time.
-          </span>
-        </label>
-        {errors.consent && (
-          <span className="error" role="alert">
-            {errors.consent}
-          </span>
-        )}
-        <button type="submit" className="submit-button">
-          Submit (Demo Only) <ArrowRight size={16} />
-        </button>
-        {submitted && (
-          <div className="demo-note" role="status">
-            <Check size={15} /> Demo validation complete. Nothing was
-            transmitted or stored.
-          </div>
-        )}
-        <p className="form-footnote" id="form-demo-note">
-          This is a demo form. No information is transmitted or stored.
-        </p>
+        <fieldset><legend>Audience type *</legend><div className="radio-row"><label><input type="radio" name="audience" value="fleet" checked={audience === "fleet"} onChange={(e) => setAudience(e.target.value)} /> Fleet / Delivery Business</label><label><input type="radio" name="audience" value="individual" checked={audience === "individual"} onChange={(e) => setAudience(e.target.value)} /> Individual Driver</label></div></fieldset>
+        <label htmlFor="message">What would you most like from a driver-awareness product?<textarea id="message" name="message" placeholder="Share your thoughts (optional)" rows={4} /></label>
+        <label className="consent" htmlFor="consent"><input id="consent" name="consent" type="checkbox" required aria-invalid={!!errors.consent} /> <span>I&apos;d like to receive Astrateq pre-launch updates and related product research communications. I understand this is a pre-launch product and I can withdraw my consent at any time. My information would only be used to respond to this request and provide these updates; it would not be sold.</span></label>
+        {errors.consent && <span className="error" role="alert">{errors.consent}</span>}
+        <input name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="honeypot" />
+        <button type="submit" className="submit-button" disabled={status === "pending"}>{status === "pending" ? "Submitting…" : DEMO_ONLY ? "Submit (Demo Only)" : "Join Early Access"} <ArrowRight size={16} /></button>
+        {statusMessage && <div className={status === "error" ? "error form-status" : "demo-note form-status"} role={status === "error" ? "alert" : "status"}>{statusMessage}</div>}
+        <p className="form-footnote" id="form-demo-note">This is a demo form. No information is transmitted or stored. Live submissions will remain disabled until the sender setup, recipient, delivery behavior, and privacy wording are approved.</p>
       </form>
     </div>
   );
