@@ -36,6 +36,38 @@ function Brand() {
   );
 }
 
+function ResilientImage({
+  src,
+  alt,
+  className,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <div
+        className={`${className ?? ""} image-fallback`}
+        role="img"
+        aria-label={alt}
+      >
+        <span>Image unavailable</span>
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 function Header() {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
@@ -315,7 +347,7 @@ export default function AstrateqLanding() {
     <main id="top">
       <Header />
       <section className="hero">
-        <img
+        <ResilientImage
           src={heroImage}
           alt="Driver viewing a city skyline through a car windshield at dusk"
         />
@@ -353,7 +385,7 @@ export default function AstrateqLanding() {
                 driver-centered insights and connected experiences.
               </p>
             </div>
-            <img
+            <ResilientImage
               src={driverImage}
               alt="Driver wearing glasses behind the wheel"
             />
@@ -422,7 +454,7 @@ export default function AstrateqLanding() {
           </div>
           <div className="audience-grid">
             <article className="audience-card">
-              <img src={fleetImage} alt="Delivery trucks on a road" />
+              <ResilientImage src={fleetImage} alt="Delivery trucks on a road" />
               <div>
                 <Truck className="accent-icon" aria-hidden="true" />
                 <h3>Fleet &amp; Delivery Businesses</h3>
@@ -440,7 +472,10 @@ export default function AstrateqLanding() {
               </div>
             </article>
             <article className="audience-card">
-              <img src={individualImage} alt="Individual driver in a car" />
+              <ResilientImage
+                src={individualImage}
+                alt="Individual driver in a car"
+              />
               <div>
                 <UserRound className="accent-icon" aria-hidden="true" />
                 <h3>Individual Drivers</h3>
@@ -486,40 +521,53 @@ export default function AstrateqLanding() {
       <footer>
         <div className="container">
           <div className="footer-grid">
-            <div>
+            <div className="footer-brand-column">
               <Brand />
               <p className="footer-tagline">
                 Driver awareness. Thoughtfully connected.
               </p>
               <p>
-                Exploring driver-focused insights and connected experiences for
-                individual drivers and fleet operators.
+                Exploring a pre-launch driver-awareness and fleet-intelligence
+                concept for individual drivers and operators.
               </p>
-              <p className="footer-status">
-                Pre-launch — product in development.
-              </p>
+              <p className="footer-status">Pre-launch — in development.</p>
+            </div>
+            <div>
+              <h4>Product</h4>
+              <a href="#product">Driver Intelligence</a>
+              <a href="#early-access">Individual Driver Experience</a>
+              <a href="#product">Fleet Intelligence</a>
+              <a href="#early-access">Early Access</a>
             </div>
             <div>
               <h4>Explore</h4>
-              <a href="#product">Product</a>
-              <a href="#approach">Our Approach</a>
-              <a href="#faq">Frequently Asked Questions</a>
-              <a href="#early-access">Join Early Access</a>
+              <a href="#product">Product overview</a>
+              <a href="#approach">Our approach</a>
+              <a href="#faq">FAQs</a>
+              <a href="#early-access">Contact / early access</a>
             </div>
-            <div>
-              <h4>Built for the GTA</h4>
-              <p>Designed with the Greater Toronto Area in mind.</p>
+            <div className="footer-ecosystem">
+              <h4>Built with the GTA in mind</h4>
               <p>
-                Considering regional context across Toronto, North York,
-                Mississauga, Brampton, Markham, and Vaughan.
+                A design context for GTA commuters and fleet operators across
+                Toronto and North York, Mississauga and Brampton, and Markham
+                and Vaughan.
+              </p>
+              <p>
+                Exploring the role of automotive technology, driver awareness,
+                fleet operations, and mobility innovation in everyday journeys.
               </p>
             </div>
           </div>
-          <div className="footer-bottom">
+          <div className="footer-transparency">
+            <strong>Transparency</strong>
             <span>
-              Demo notice: the early-access form does not transmit or store
-              information.
+              Astrateq Gadgets is in development and is not an approved safety
+              product. The demo form does not transmit or store information.
             </span>
+          </div>
+          <div className="footer-bottom">
+            <span>Demo-only experience. Do not submit sensitive information.</span>
             <span>© {year} Astrateq Gadgets</span>
           </div>
         </div>
