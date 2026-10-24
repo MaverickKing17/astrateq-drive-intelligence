@@ -26,11 +26,11 @@ const individualImage =
 function Brand() {
   return (
     <a href="#top" className="brand" aria-label="Astrateq Gadgets home">
-      <span className="brand-mark">A</span>
-      <span>
-        <strong>ASTRATEQ</strong>
-        <small>GADGETS</small>
-      </span>
+      <img
+        className="brand-logo"
+        src="/brand/astrateq-gadgets-logo.png"
+        alt="Astrateq Gadgets logo"
+      />
     </a>
   );
 }
